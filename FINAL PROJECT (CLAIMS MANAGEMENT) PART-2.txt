@@ -1,0 +1,1980 @@
+
+
+-------------------------------------------------------------------
+======================FINAL PROJECT WITH CORE ================================
+-------------------------------------------------------------------
+
+
+----------------->FIRST OF ALL
+
+INSTALL REQUIRED PACKAGES
+============================================================================
+------------------------->CONTROLLER<-------------------------------------
+
+=============================================================================
+-----------------------------HomeController 
+
+using MainProject1.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Threading.Tasks;
+
+namespace MainProject1.Controllers
+{
+    [Authorize]
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+        public IActionResult YourStatus()
+        {
+            return View();
+        }
+        [HttpGet]
+        public IActionResult Status()
+        {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult Status(StatusModel obj)
+        {
+            HttpClient clint = new HttpClient();
+
+            var editdata = clint.GetAsync("http://localhost:52217/Api/GetStatus"+"?Empid="+obj.Empid+"&Role="+obj.Role+"&Name="+obj.Name).Result;
+
+            var readData = editdata.Content.ReadAsStringAsync().Result;
+             
+            var result = JsonConvert.DeserializeObject<DataModel>(readData);
+            return View("YourStatus", result);
+        }
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+        [HttpGet]
+        public IActionResult Claims()
+        {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult Claims(DataModel obj)
+        {
+            HttpClient clint = new HttpClient();
+            var adddata = JsonConvert.SerializeObject(obj);
+
+            //step 2- Send data json f, UTF-8,which type of data
+
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            //Post data to api
+            var result = clint.PostAsync("http://localhost:52217/Api/InsertClaim", postData).Result;
+
+            TempData["Message"] = "Claims Saved SuccsessFully..";
+
+            return View();
+            //if (obj.Role == "Manager")
+            //{
+            //    return RedirectToAction("ManagerDe","Manager");
+            //}
+            //else
+            //{
+            //    return RedirectToAction("EmpStatus","Employee");
+            //}
+        }
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
+        [HttpPost]
+        [AllowAnonymous]
+        public IActionResult Login(UserLogin obj)
+        {
+            HttpClient clint = new HttpClient();
+
+            var editdata = clint.GetAsync("http://localhost:52217/api/UserLogin"+"?Email=" + obj.Email + "&Password=" + obj.Password).Result;
+
+            var readData = editdata.Content.ReadAsStringAsync().Result;
+
+            //3rd step convert json to CLASS OBJECT (razor syntax for view)
+
+            var empres = JsonConvert.DeserializeObject<UserLogin>(readData);
+
+            if (empres == null)
+            {
+                TempData["InvalidEmail"] = "Invalid Email..Please enter correct Email..";
+
+            }
+            else
+            {
+                if (empres.Email == obj.Email && empres.Password == obj.Password  )
+                {
+                    HttpContext.Session.SetString("Name1", empres.Name);
+                    HttpContext.Session.SetString("Role", empres.Role);
+                    //strep 1---
+
+                    var claims = new[] { new Claim(ClaimTypes.Name,  empres.Name),
+                    new Claim(ClaimTypes.Email, empres.Email)};
+
+                    //step 2-- identity
+                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                    //strep 3---
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = true
+                    };
+                    //strep 4--- take above values
+                    HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(identity),authProperties);
+                    if (empres.Role == obj.Role)
+                    {
+                        
+                        if (empres.Role == "Admin")
+                        {
+                            return RedirectToAction("Index", "Admin");
+                        }
+                        else if (empres.Role == "Manager")
+                        {
+                            return RedirectToAction("EmployeeDet", "Manager");
+                        }
+                        else if (empres.Role == "Accountent")
+                        {
+                            return RedirectToAction("AllData", "ACCT");
+                        }
+                        else if (empres.Role == "Employee")
+                        {
+                            return RedirectToAction("EmpStatus", "Employee");
+                        }
+                        TempData["Message"] = "You Login SuccsessFully..";
+                    }
+                    else
+                    {
+                        TempData["Role"] = "Please select Correct Role..";
+                        return View();
+                    }
+                }
+                else
+                {
+                    TempData["InvalidPass"] = "Invalid Password..Please enter correct password..";
+                }
+            }
+
+ 
+            return View();
+        }
+        public IActionResult LogOut()
+        {
+            HttpContext.SignOutAsync();
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login");
+        }
+
+    }
+}
+ 
+
+=============================================================================
+----------------------------->AdminController 
+
+using MainProject1.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace MainProject1.Controllers
+{
+    [Authorize]
+    public class AdminController : Controller
+    {
+        HttpClient clint = new HttpClient();
+        public IActionResult Index()
+        
+        { 
+            var data = clint.GetAsync("http://localhost:52217/Api/GetAllData").Result;
+            //2nd step for read data
+            var readData = data.Content.ReadAsStringAsync().Result;
+
+            //3rd step convert json to CLASS OBJECT (razor syntax for view)
+
+            var res = JsonConvert.DeserializeObject<List<DataModel>>(readData);
+
+            return View(res); 
+        }
+        public IActionResult ManagerDe()
+        {
+            var data = clint.GetAsync("http://localhost:52217/Api/GetDataWithRole" + "?Role=" + "Manager").Result;
+            var readData = data.Content.ReadAsStringAsync().Result;
+            var res = JsonConvert.DeserializeObject<List<DataModel>>(readData);
+
+            return View(res);
+        } 
+        public IActionResult AllEmployee()
+        {
+            var data = clint.GetAsync("http://localhost:52217/Api/GetAllEmployee").Result; 
+            var readData = data.Content.ReadAsStringAsync().Result; 
+            var res = JsonConvert.DeserializeObject<List<AddDataModel>>(readData);
+
+            return View(res);
+
+        }
+        [HttpGet]
+        public IActionResult Registration()
+        {
+
+            return View();
+        }
+     
+        [HttpPost]
+        public IActionResult Registration(AddDataModel obj)
+        {
+
+            var adddata = JsonConvert.SerializeObject(obj);
+
+            //step 2- Send data json f, UTF-8,which type of data
+
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            //Post data to api
+            var result = clint.PostAsync("http://localhost:52217/Api/InsertData", postData).Result;
+
+            TempData["Message"] = "Data Saved SuccsessFully..";
+
+            return RedirectToAction("ManagerDe");
+      
+        }
+        public IActionResult Approv(int Empid)
+        {
+             
+            var adddata = JsonConvert.SerializeObject(Empid);
+
+            //step 2- Send data json f, UTF-8,which type of data
+
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            //Post data to api
+            var result = clint.PostAsync("http://localhost:52217/Api/AdmApproved" + "?Id=" + Empid, postData).Result;
+
+            TempData["Message"] = "Data Saved SuccsessFully..";
+
+            return RedirectToAction("ManagerDe");
+
+        }
+ 
+        public IActionResult Sendback(int Empid)
+        {
+            var adddata = JsonConvert.SerializeObject(Empid); 
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json"); 
+            var result = clint.PostAsync("http://localhost:52217/Api/AdmSandBack?Id="+ Empid, postData).Result; 
+            return RedirectToAction("ManagerDe"); 
+        }
+       
+        public IActionResult Reject(int Empid)
+        {
+            var adddata = JsonConvert.SerializeObject(Empid); 
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json"); 
+            var result = clint.PostAsync("http://localhost:52217/Api/AdmReject" + "?Id=" + Empid, postData).Result; 
+            TempData["Message"] = "Data Saved SuccsessFully..";
+            return RedirectToAction("ManagerDe");
+        }
+        public IActionResult LogOut()
+        {
+            HttpContext.SignOutAsync();
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Home");
+        }
+
+
+    }
+}
+
+=============================================================================
+-----------------------------ACCTController 
+
+using MainProject1.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace MainProject1.Controllers
+{
+  [Authorize]
+    public class ACCTController : Controller
+    {
+
+        HttpClient clint = new HttpClient();
+        public IActionResult AllData()
+
+        {
+            var data = clint.GetAsync("http://localhost:52217/Api/GetAllData").Result;
+            //2nd step for read data
+            var readData = data.Content.ReadAsStringAsync().Result;
+
+            //3rd step convert json to CLASS OBJECT (razor syntax for view)
+
+            var res = JsonConvert.DeserializeObject<List<DataModel>>(readData);
+
+            return View(res);
+        }
+
+        public IActionResult ManagerDe()
+        {
+            var data = clint.GetAsync("http://localhost:52217/Api/GetDataWithRole" + "?Role=" + "Manager").Result;
+            var readData = data.Content.ReadAsStringAsync().Result;
+            var res = JsonConvert.DeserializeObject<List<DataModel>>(readData);
+
+            return View(res);
+        }
+
+        public IActionResult Approv(int Empid)
+        {
+
+            var adddata = JsonConvert.SerializeObject(Empid);
+
+            //step 2- Send data json f, UTF-8,which type of data
+
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            //Post data to api
+            var result = clint.PostAsync("http://localhost:52217/Api/AccSApproved" + "?Id=" + Empid, postData).Result;
+
+            TempData["Message"] = "Data Saved SuccsessFully..";
+
+            return RedirectToAction("AllData");
+
+        }
+
+        public IActionResult Sendback(int Empid)
+        {
+            var adddata = JsonConvert.SerializeObject(Empid);
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            var result = clint.PostAsync("http://localhost:52217/Api/AccSSandBack?Id=" + Empid, postData).Result;
+            return RedirectToAction("AllData");
+        }
+
+        public IActionResult Reject(int Empid)
+        {
+            var adddata = JsonConvert.SerializeObject(Empid);
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            var result = clint.PostAsync("http://localhost:52217/Api/AccSReject" + "?Id=" + Empid, postData).Result;
+            TempData["Message"] = "Data Saved SuccsessFully..";
+            return RedirectToAction("AllData");
+        }
+
+        public IActionResult LogOut()
+        {
+            HttpContext.SignOutAsync();
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login","Home");
+        }
+
+    }
+}
+
+=============================================================================
+-----------------------------ManagerController 
+
+using MainProject1.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace MainProject1.Controllers
+{
+
+    public class ManagerController : Controller
+    {
+        HttpClient clint = new HttpClient();
+       
+        public IActionResult EmployeeDet()
+        {
+            var data = clint.GetAsync("http://localhost:52217/Api/GetDataWithRole" + "?Role=" + "Employee").Result;
+            var readData = data.Content.ReadAsStringAsync().Result;
+            var res = JsonConvert.DeserializeObject<List<DataModel>>(readData);
+
+            return View(res);
+        }
+
+        public IActionResult Approv(int Empid)
+        {
+
+            var adddata = JsonConvert.SerializeObject(Empid);
+
+            //step 2- Send data json f, UTF-8,which type of data
+
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            //Post data to api
+            var result = clint.PostAsync("http://localhost:52217/Api/MngApproved" + "?Id=" + Empid, postData).Result;
+
+            TempData["Message"] = "Data Saved SuccsessFully..";
+
+            return RedirectToAction("EmployeeDet");
+
+        }
+      
+        public IActionResult Sendback(int Empid)
+        {
+            var adddata = JsonConvert.SerializeObject(Empid);
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            var result = clint.PostAsync("http://localhost:52217/Api/MngSandBack?Id=" + Empid, postData).Result;
+            return RedirectToAction("EmployeeDet");
+        }
+       
+        public IActionResult Reject(int Empid)
+        {
+            var adddata = JsonConvert.SerializeObject(Empid);
+            StringContent postData = new StringContent(adddata, System.Text.Encoding.UTF8, "application/json");
+            var result = clint.PostAsync("http://localhost:52217/Api/MngReject" + "?Id=" + Empid, postData).Result;
+            TempData["Message"] = "Data Saved SuccsessFully..";
+            return RedirectToAction("EmployeeDet");
+        }
+        public IActionResult LogOut()
+        {
+            HttpContext.SignOutAsync();
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Home");
+        }
+
+    }
+}
+
+=============================================================================
+-----------------------------EmployeeController 
+
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1.Controllers
+{
+    
+    public class EmployeeController : Controller
+    {
+        public IActionResult Index()
+        {
+            return View();
+        }
+        public IActionResult EmpStatus()
+        {
+            return View();
+        }
+        public IActionResult LogOut()
+        {
+            HttpContext.SignOutAsync();
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Home");
+        }
+
+    }
+}
+
+ 
+
+====================================================================
+
+-------------------------->MODELS
+
+----------->AddDataModel
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1.Models
+{
+    public class AddDataModel
+    {
+        public int id { get; set; }
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public string Role { get; set; }
+        [Required]
+        public string MobileNo { get; set; }
+        [Required]
+        public string DOB { get; set; }
+        [Required]
+        [EmailAddress] 
+        public string Email { get; set; }
+        [Required]
+        public string Password { get; set; }
+        
+        public DateTime DateofJoining { get; set; }
+       
+        public int Salary { get; set; }
+        [Required]
+        public string State { get; set; }
+       
+        public string City { get; set; }
+       [Required]
+        public string District { get; set; }
+        public string Dist { get; set; }
+        public string PinCode { get; set; }
+
+    }
+}
+
+
+
+------------------------>DataModel  
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1.Models
+{
+    public class DataModel
+    {
+        [Required]
+        public int Empid { get; set; }
+        [Required]
+        public string Role { get; set; }
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public string Destination { get; set; }
+        [Required]
+        public DateTime DateofApply { get; set; }
+        [Required]
+        public string Days { get; set; }
+        [Required]
+        public string Reason { get; set; }
+        [Required]
+        public string Transport { get; set; }
+        [Required]
+        public Nullable<decimal> CostSpend { get; set; }
+      
+        public Nullable<System.DateTime>Dateofdone { get; set; }
+         
+        public string MStatus { get; set; }
+         
+        public string feedback { get; set; }
+   
+        public string AcSStatus { get; set; }
+        
+        public string paymentStatus { get; set; }
+    }
+}
+
+---------------------------------->ErrorViewModel
+using System;
+
+namespace MainProject1.Models
+{
+    public class ErrorViewModel
+    {
+        public string RequestId { get; set; }
+
+        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+    }
+}
+
+ ---------------------------------->StatusModel
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1.Models
+{
+    public class StatusModel
+    {
+        [Required]
+        public int Empid { get; set; }
+        [Required]
+        public string Role { get; set; }
+        [Required]
+        public string Name { get; set; }
+       
+    }
+}
+
+------------------------------------->UserLogin MODEL
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1.Models
+{
+    public class UserLogin
+    {
+        public int Id { get; set; }
+        [Required]
+        public Nullable<int> RegID { get; set; }
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public string Email { get; set; }
+        [Required]
+        public string Password { get; set; }
+        [Required]
+        public string Role { get; set; }
+    }
+}
+=====================================================================================
+-----------------------------> VIEWS <-----------------------------------------------
+
+
+==========================================ADMIN VIEWS
+
+----------------------------------------------->"AllEmployee"
+
+@model List<MainProject1.Models.AddDataModel>
+@{
+    ViewData["Title"] = "AllEmployee";
+}
+
+<h1>AllEmployee</h1>
+  
+<style>
+    .head {
+        background-color: #5e66fb;
+    }
+</style>
+<body>
+
+    @*<h5 style="color:#080ba8" class="text-sm-center temp">@TempData["Message"]</h5>*@
+
+    <h5>Your All data </h5>
+    <table class="table table-bordered table-hover">
+        <tr class="head">
+            <th>Empid</th>
+            <th>Role</th>
+            <th>Name</th>
+            <th>MobileNo</th>
+            <th>Dob</th>
+            <th>Email</th>
+            <th>Password</th>
+            <th>State</th>
+            <th>District</th>
+            <th>PinCode</th>         
+        </tr>
+        @foreach (var item in Model)
+        {
+            <tr class="trr">
+                <td>@item.id</td>
+                <td>@item.Role</td>
+                <td>@item.Name</td>
+                <td>@item.MobileNo</td>
+                <td>@item.DOB</td>
+                <td>@item.Email</td>
+                <td>@item.Password</td>
+                <td>@item.State</td>
+                <td>@item.Dist</td>
+                <td>@item.PinCode</td> 
+
+                @*<td><a class="btn btn-primary" asp-controller="Admin" asp-action="Approv" asp-route-id="@item.Empid">Approv</a></td>
+                    <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Sendback" asp-route-id="@item.Empid">Sendback</a></td>
+                    <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Reject" asp-route-id="@item.Empid">Reject</a></td>*@
+
+            </tr>
+        }
+    </table>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+
+</script>
+<script>
+        $(document).ready(function () {
+            //alert("Login Successesfully..You are eligible...");
+            $(".temp").fadeOut(3000);
+            });
+
+</script>
+
+
+
+----------------------------------------------->"Index"
+
+@model List<MainProject1.Models.DataModel>
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<style>
+    .head {
+        background-color: #5e66fb;
+    }
+</style>
+<body>
+    
+        @*<h5 style="color:#080ba8" class="text-sm-center temp">@TempData["Message"]</h5>*@
+
+        <h5>Your All data </h5>
+        <table class="table table-bordered table-hover">
+            <tr class="head">
+                <th>Empid</th>
+                <th>Role</th>
+                <th>Name</th>
+                <th>Destination</th>
+                <th>Date of Apply</th>
+                <th>Days</th>
+                <th>Reason</th>
+                <th>Transport</th>
+                <th>CostSpend</th>
+                <th>Date of Last Action</th>
+                <th>Manager Status</th>
+                <th>Account Stauts</th>
+                <th>Payment Stauts</th>
+                <th>Feedback</th>
+
+            </tr>
+            @foreach (var item in Model)
+            {
+        <tr class="trr">
+            <td>@item.Empid</td>
+            <td>@item.Role</td>
+            <td>@item.Name</td> 
+            <td>@item.Destination</td>
+            <td>@item.DateofApply.Date.ToShortDateString()</td>
+            <td>@item.Days</td>
+            <td>@item.Reason</td>
+            <td>@item.Transport</td>
+            <td>@item.CostSpend</td>
+            <td>@item.Dateofdone</td>
+            <td>@item.MStatus</td>
+            <td>@item.AcSStatus</td>
+            <td>@item.paymentStatus</td>
+            <td>@item.feedback</td>
+          
+            @*<td><a class="btn btn-primary" asp-controller="Admin" asp-action="Approv" asp-route-id="@item.Empid">Approv</a></td>
+            <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Sendback" asp-route-id="@item.Empid">Sendback</a></td>
+            <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Reject" asp-route-id="@item.Empid">Reject</a></td>*@
+             
+        </tr>
+            }
+        </table>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+
+</script>
+<script>
+        $(document).ready(function () {
+            //alert("Login Successesfully..You are eligible...");
+            $(".temp").fadeOut(3000);
+            });
+
+</script>
+
+
+
+----------------------------------------------->"ManagerDe"
+
+@model List<MainProject1.Models.DataModel>
+
+@{
+    ViewData["Title"] = "ManagerDe";
+}
+
+<marquee>
+    <h1>Managers Request For Claim </h1>
+</marquee>
+<style>
+    .head {
+        background-color: #5e66fb;
+    }
+</style>
+<body>
+
+    @*<h5 style="color:#080ba8" class="text-sm-center temp">@TempData["Message"]</h5>*@
+
+    <h5>Your All data </h5>
+    <table class="table table-bordered table-hover">
+        <tr class="head">
+            <th>Empid</th>
+            <th>Role</th>
+            <th>Name</th>
+            <th>Destination</th>
+            <th>Date of Apply</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th>Transport</th>
+            <th>CostSpend</th>
+            <th>Date of Last Action</th>
+            <th>Manager Status</th>
+            @*<th>Account Stauts</th>
+            <th>Payment Stauts</th>*@
+            <th>Feedback</th>
+
+        </tr>
+        @foreach (var item in Model)
+        {
+            <tr class="trr">
+                <td>@item.Empid</td>
+                <td>@item.Role</td>
+                <td>@item.Name</td>
+                <td>@item.Destination</td>
+                <td>@item.DateofApply.Date.ToShortDateString()</td>
+                <td>@item.Days</td>
+                <td>@item.Reason</td>
+                <td>@item.Transport</td>
+                <td>@item.CostSpend</td>
+                <td>@item.Dateofdone</td>
+                <td>@item.MStatus</td>
+                @*<td>@item.AcSStatus</td>
+                <td>@item.paymentStatus</td>*@
+                <td>@item.feedback</td>
+                <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Approv"asp-route-Empid="@item.Empid">Approv</a></td>
+                <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Sendback" asp-route-Empid="@item.Empid">Sendback</a></td>
+                <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Reject" asp-route-Empid="@item.Empid">Reject</a></td>
+
+            </tr>
+        }
+    </table>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+
+</script>
+<script>
+    $(document).ready(function () {
+        //alert("Login Successesfully..You are eligible...");
+        $(".temp").fadeOut(3000);
+    });
+
+</script>
+
+----------------------------------------------->"Registration"
+
+
+
+@model MainProject1.Models.AddDataModel
+@{
+    ViewData["Title"] = "Registration";
+}
+ 
+<style>
+        .box {
+         /*   background-color: aliceblue;*/
+            width: 500px;
+            border-radius: 4px;
+            margin: 0 auto 0 auto;
+            padding: 5px 15px 120px 15px;
+        }
+     body{
+         background:url('@Url.Content("~/css/images/chetu.jpg")');
+         background-size:3000px,40px
+     }
+    </style>
+
+<div class="box">
+
+
+    <center>
+        <h1 style="font-family:'Global Serif'"><u>ADD EMPLOYEE DETAILS</u></h1>
+    </center>
+
+    @*<partial name="SessionTest">*@
+<form asp-action="Registration" asp-controller="Admin" method="post">
+    <input asp-for="id" type="hidden" />
+    <div class=" form-group">
+        <label><b>Role</b></label>
+        <select asp-for="Role" class=" form-control" data-val="true" data-val-required="pls enter Role" type="text">
+            <option>Manager</option>
+            <option>Accountent</option>
+            <option>Employee</option>
+        </select>
+        <span class="text-danger" asp-validation-for="Role"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>Name</b></label>
+        @*<input asp-for="Name" class="form-control" required="required" type="text" />*@
+        <input asp-for="Name" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="Name"></span>
+    </div>
+
+    <div class=" form-group">
+        <label><b>Mobile-No</b></label>
+
+        <input asp-for="MobileNo" class="form-control" data-val="true" data-val-required="pls enter email" type="text" />
+        <span class="text-danger" asp-validation-for="MobileNo"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>DOB</b></label>
+        <input asp-for="DOB" class="form-control" data-val="true" data-val-required="pls enter company" type="text">
+
+        <span class="text-danger" asp-validation-for="DOB"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>Email</b></label>
+        <input asp-for="Email" class="form-control" data-val="true" data-val-required="pls enter Email" type="text" />
+        <span class="text-danger" asp-validation-for="Email"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>Password</b></label>
+        <input asp-for="Password" class="form-control" data-val="true" data-val-required="pls enter mobile" type="text" />
+        <span class="text-danger" asp-validation-for="Password"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>DateofJoining</b></label>
+        <input asp-for="DateofJoining" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="DateofJoining"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>Salary</b></label>
+        <input asp-for="Salary" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="Salary"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>State</b></label>
+        <input asp-for="State" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="State"></span>
+    </div>
+
+    <div class=" form-group">
+        <label><b>District</b></label>
+        <input asp-for="District" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="District"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>City</b></label>
+        <input asp-for="City" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="City"></span>
+    </div>
+    <div class=" form-group">
+        <label><b>Pincode</b></label>
+        <input asp-for="PinCode" class="form-control" data-val="true" data-val-required="pls enter name" type="text" />
+        <span class="text-danger" asp-validation-for="PinCode"></span>
+    </div>
+
+
+    <input class="btn btn-success" value="submit" type="submit">
+</form>
+</div>
+
+
+
+
+===========================================================================
+
+--------------------------------------------------------->ACCOUNTENT VIEWS
+
+--------------------------------------------------------->"AllData"
+@model List<MainProject1.Models.DataModel>
+@{
+    ViewData["Title"] = "AllData";
+}
+
+<h1>AllData</h1>
+
+<style>
+    .head {
+        background-color: #5e66fb;
+    }
+</style>
+<body>
+
+    @*<h5 style="color:#080ba8" class="text-sm-center temp">@TempData["Message"]</h5>*@
+
+    <h5>Your All data </h5>
+    <table class="table table-bordered table-hover">
+        <tr class="head">
+            <th>Empid</th>
+            <th>Role</th>
+            <th>Name</th>
+            <th>Destination</th>
+            <th>Date of Apply</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th>Transport</th>
+            <th>CostSpend</th>
+            <th>Date of Last Action</th>
+            <th>Privious Status</th>
+            <th>Account Stauts</th>
+            <th>Payment Stauts</th>
+            <th>Feedback</th>
+
+        </tr>
+        @foreach (var item in Model)
+        {
+            <tr class="trr">
+                <td>@item.Empid</td>
+                <td>@item.Role</td>
+                <td>@item.Name</td>
+                <td>@item.Destination</td>
+                <td>@item.DateofApply.Date.ToShortDateString()</td>
+                <td>@item.Days</td>
+                <td>@item.Reason</td>
+                <td>@item.Transport</td>
+                <td>@item.CostSpend</td>
+                <td>@item.Dateofdone</td>
+                <td>@item.MStatus</td>
+                <td>@item.AcSStatus</td>
+                <td>@item.paymentStatus</td>
+                <td>@item.feedback</td>
+
+                <td><a class="btn btn-primary" asp-controller="ACCT" asp-action="Approv" asp-route-Empid="@item.Empid">Approv</a></td>
+                    <td><a class="btn btn-primary" asp-controller="ACCT" asp-action="Sendback" asp-route-Empid="@item.Empid">Sendback</a></td>
+                    <td><a class="btn btn-primary" asp-controller="ACCT" asp-action="Reject" asp-route-Empid="@item.Empid">Reject</a></td>
+
+            </tr>
+        }
+    </table>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+
+</script>
+<script>
+    $(document).ready(function () {
+        //alert("Login Successesfully..You are eligible...");
+        $(".temp").fadeOut(3000);
+    });
+
+</script>
+
+
+===========================================================================
+
+--------------------------------------------------------->MANAGER VIEWS
+
+------------------------------------>"EmployeeDet"
+
+@model List<MainProject1.Models.DataModel>
+@{
+    ViewData["Title"] = "EmployeeDet";
+  
+}
+
+<marquee>
+    <h1>Employees Request For Claim </h1>
+</marquee>
+
+<style>
+    .head {
+        background-color: #69efef;
+    }
+</style>
+<body>
+
+    @*<h5 style="color:#080ba8" class="text-sm-center temp">@TempData["Message"]</h5>*@
+
+    <h5>Your All data </h5>
+    <table class="table table-bordered table-hover">
+        <tr class="head">
+            <th>Empid</th>
+            <th>Role</th>
+            <th>Name</th>
+            <th>Destination</th>
+            <th>Date of Apply</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th>Transport</th>
+            <th>CostSpend</th>
+            <th>Date of Last Action</th>
+            <th>Manager Status</th>
+            @*<th>Account Stauts</th>
+                <th>Payment Stauts</th>*@
+            <th>Feedback</th>
+
+        </tr>
+        @foreach (var item in Model)
+        {
+            <tr class="trr">
+                <td>@item.Empid</td>
+                <td>@item.Role</td>
+                <td>@item.Name</td>
+                <td>@item.Destination</td>
+                <td>@item.DateofApply.Date.ToShortDateString()</td>
+                <td>@item.Days</td>
+                <td>@item.Reason</td>
+                <td>@item.Transport</td>
+                <td>@item.CostSpend</td>
+                <td>@item.Dateofdone</td>
+                <td>@item.MStatus</td>
+                @*<td>@item.AcSStatus</td>
+                    <td>@item.paymentStatus</td>*@
+                <td>@item.feedback</td>
+                <td><a class="btn btn-primary" asp-controller="Manager" asp-action="Approv" asp-route-Empid="@item.Empid">Approv</a></td>
+                <td><a class="btn btn-primary" asp-controller="Manager" asp-action="Sendback" asp-route-Empid="@item.Empid">Sendback</a></td>
+                <td><a class="btn btn-primary" asp-controller="Manager" asp-action="Reject" asp-route-Empid="@item.Empid">Reject</a></td>
+
+            </tr>
+        }
+    </table>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+
+</script>
+<script>
+    $(document).ready(function () {
+        //alert("Login Successesfully..You are eligible...");
+        $(".temp").fadeOut(3000);
+    });
+
+</script>
+
+
+
+===========================================================================
+
+-------------------------------------------------------->EMPOLYEE
+
+------------------------------------------------->"EmpStatus"
+
+
+ @{
+    ViewData["Title"] = "EmpStatus";
+}
+
+<h1>EmpStatus</h1>
+<h2>
+    Chetu Profile and History
+    Chetu is a US-based software development company providing industry-specific,
+    world-class software solutions to businesses around the globe. Combining technological expertise, specific domain experience and a passion for delivering world-class, enterprise-grade solutions,
+    Chetu is a true and seamless backend technology partner; 
+    helping businesses accelerate the development of desktop, mobile and w ...Read More
+</h2>
+ 
+===========================================================================
+
+-------------------------------------------------------->HOME VIEWS
+
+-------------------------------------------->"Claims"
+
+
+@model MainProject1.Models.DataModel
+@{
+    ViewData["Title"] = "Claims";
+}
+<p class="text-danger">@TempData["Message"]</p>
+<h1>Claims</h1>
+<style>
+    .a {
+        color: #ff0000
+    }
+
+    body {
+        background-color: #00ffff
+    }
+
+    .b {
+        padding: 80px,100px;
+        margin: 20px,20px,20px,20px;
+        border: 3px solid #ffffff;
+    }
+
+    input[type=text], input[type=email], input[type=number], input[type=text], input[type=number], input[type=number], input[type=date] {
+        width: 50%;
+        padding: 5px 5px 5px 5px;
+        margin: 5px 0;
+        display: inline-block;
+        border: 3px solid groove;
+    }
+</style>
+
+
+<h2>AddEmp</h2>
+ 
+<div class="container">
+    <form asp-action="Claims" asp-controller="Home" method="post">
+        <div class="card b">
+            @*<input asp-for="Id" type="hidden" />*@
+            <div class="form-group">
+                <label>Id<label class="a">*</label></label><br />
+                <input asp-for="Empid" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Empid"></span>
+                
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select asp-for="Role" class=" form-control" data-val="true">
+                    <option>Manager</option>
+                    <option>Employee</option>
+                </select>
+                <span class="text-danger" asp-validation-for="Role"></span>
+            </div>
+            <div class="form-group">
+                <label>Name<label class="a">*</label></label><br />
+                <input asp-for="Name" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Name"></span>
+            </div>
+            <div class="form-group">
+                <label>Destination<label class="a">*</label></label><br />
+                <input asp-for="Destination" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Destination"></span>
+            </div>
+            <div class="form-group">
+                <label>Date of Apply<label class="a">*</label></label><br />
+                <input asp-for="DateofApply" class="form-control" data-val="true" city" type="date" />
+                <span class="text-danger" asp-validation-for="DateofApply"></span>
+            </div>
+            <div class="form-group">
+                <label>Number of Days stayed<label class="a">*</label></label><br />
+                <input asp-for="Days" class="form-control" data-val="true" type="number" />
+                <span class="text-danger" asp-validation-for="Days"></span>
+            </div>
+            <div class="form-group">
+                <label>Reason for Journey<label class="a">*</label></label><br />
+                <input asp-for="Reason" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Reason"></span>
+            </div>
+            <div class="form-group">
+                <label>Use Transport <label class="a">*</label></label><br />
+                <input asp-for="Transport" class="form-control" data-val="true" type="text" />
+                @*<input asp-for="Transport" type="radio" value="@item.Empid" /> <label>Public</label>
+                    <input asp-for="Transport" type="radio" value="@item.Empid" /> <label></label>
+                    <input asp-for="Transport" type="radio" value="@item.Empid" /> <label>Public</label>
+                    <input asp-for="Transport" type="radio" value="@item.Empid" /> <label>Public</label>*@
+                <span class="text-danger" asp-validation-for="Transport"></span>
+            </div>
+            <div class="form-group">
+                <label>Amount Spend<label class="a">*</label></label><br />
+                <input asp-for="CostSpend" class="form-control" data-val="true"  type="text" />
+                <span class="text-danger" asp-validation-for="CostSpend"></span>
+            </div>
+
+            <div>
+                <button type="submit">Claim</button>
+                @*<input class="btn btn-primary" type="submit" /><br />*@
+            </div>
+        </div>
+    </form>
+</div>
+
+
+-------------------------------------------->"Login"
+
+@model MainProject1.Models.UserLogin
+@{
+    ViewData["Title"] = "Login";
+}
+
+@*<script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        $(function () {
+     $("button").click(function () {
+                alert("login SuccessFully!!");
+            });
+        });
+    </script>*@
+
+
+<style>
+    .box {
+    background-color:aliceblue;
+        width: 500px;
+        border-radius: 4px;
+        margin: 0 auto 0 auto;
+        padding: 5px 15px 80px 15px;
+    }
+
+    .login-page {
+        margin-top: 90px;
+    }
+    body
+    {
+        background: url('@Url.Content("~/css/images/kanha.jpg")');
+        background-size:3000px,40px
+    }
+</style>
+
+
+@*<div class="login-page">*@
+<div class="box">
+
+    <center>
+        <h1 style="font-family:'Global Serif'">LOGIN</h1>
+    </center>
+    <br />
+    @*<h1>UserLogin</h1>*@
+
+    <form asp-action="Login" asp-controller="Home" method="post">
+        <div class="form-group">
+            <label>Role</label>
+            <select asp-for="Role" class=" form-control">
+                <option>Admin</option>
+                <option>Manager</option>
+                <option>Accountent</option>
+                <option>Employee</option>
+            </select>
+            <p class="text-danger">@TempData["Role"]</p>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input asp-for="Email" class="form-control" type="text" placeholder="email" />
+            <span class="text-danger" asp-validation-for="Email"></span>
+            <p class="text-danger">@TempData["InvalidEmail"]</p>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input asp-for="Password" class="form-control" type="password" placeholder="password" />
+            <span class="text-danger" asp-validation-for="Password"></span>
+            <p class="text-danger">@TempData["InvalidPass"]</p>
+        </div>
+        <div class="checkbox">
+            <label>
+                <input name="remember" type="checkbox" value="Remember Me">Remember Me
+            </label>
+        </div>
+        <button class="btn btn-lg btn-success btn-block" type="submit">Login</button>
+
+    </form>
+</div>
+
+
+-------------------------------------------->"Status"
+
+
+@model MainProject1.Models.StatusModel
+@{
+    ViewData["Title"] = "Status";
+}
+
+<h1>Status</h1>
+<div class="container">
+    <div class="card-body">
+        <form asp-action="Status" asp-controller="Home" method="post">
+            <div class="card b">
+                @*<input asp-for="Id" type="hidden" />*@
+                <div class="form-group">
+                    <label>Id<label class="a">*</label></label><br />
+                    <input asp-for="Empid" class="form-control" data-val="true" type="text" />
+                    <span class="text-danger" asp-validation-for="Empid"></span>
+
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select asp-for="Role" class=" form-control" data-val="true">
+                        <option>Manager</option>
+                        <option>Employee</option>
+                    </select>
+                    <span class="text-danger" asp-validation-for="Role"></span>
+                </div>
+                <div class="form-group">
+                    <label>Name<label class="a">*</label></label><br />
+                    <input asp-for="Name" class="form-control" data-val="true" type="text" />
+                    <span class="text-danger" asp-validation-for="Name"></span>
+                </div>
+                <div>
+                    <button type="submit">Show</button>
+                    @*<input class="btn btn-primary" type="submit" /><br />*@
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+-------------------------------------------->"YourStatus"
+
+@model MainProject1.Models.DataModel
+@{
+    ViewData["Title"] = "YourStatus";
+}
+
+<h1>YourStatus</h1>
+ 
+<style>
+    .z {
+        color: red;
+    }
+    label{
+        position:center;
+        padding:20px;
+        margin:10px;
+    }
+</style>
+<h1>Details</h1>
+
+<style>
+    body {
+        background:url('@Url.Content("~/css/kajal.jpg")');
+        background-size:1500px,10px
+   }
+</style>
+
+<form asp-action="Details" asp-controller="Employee">
+
+    <div class="form-group">
+        <label class="z">Employee Id</label>
+        <span class="bg-light text-center" style="border:double">@Model.Empid</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Employee role</label>
+        <span class="bg-light text-center" style="border:double">@Model.Role</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Employee Name</label>
+        <span class="bg-light text-center" style="border:double">@Model.Name</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Destination</label>
+        <span class="bg-light text-center" style="border:double">@Model.Destination</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Date of Apply</label>
+        <span class="bg-light text-center" style="border:double">@Model.DateofApply</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Days</label>
+        <span class="bg-light text-center" style="border:double">@Model.Days</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Reason</label>
+        <span class="bg-light text-center" style="border:double">@Model.Reason</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Transport</label>
+        <span class="bg-light text-center" style="border:double">@Model.Transport</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Cost Spend</label>
+        <span class="bg-light text-center" style="border:double">@Model.CostSpend</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Date of Last Activity</label>
+        <span class="bg-light text-center" style="border:double">@Model.Dateofdone</span>
+    </div>
+    <div class="form-group">
+        <label class="z">First Step Verification</label>
+        <span class="bg-light text-center" style="border:double">@Model.MStatus</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Account Section Verification</label>
+        <span class="bg-light text-center" style="border:double">@Model.AcSStatus</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Last Feedback</label>
+        <span class="bg-light text-center" style="border:double">@Model.feedback</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Payment Status</label>
+        <span class="bg-light text-center" style="border:double">@Model.paymentStatus</span>
+    </div>
+</form>
+
+
+=============================================================================
+
+------------------------------> ALL LAYOUTS <--------------------------------
+
+---------------------------------->_LAYOUT.CSHTML
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MainProject1</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="background-color:#b1f8e0">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MainProject1</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li>
+                     
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Login">Login</a>
+                        </li>
+                        
+                    </ul>
+
+                </div>
+            </div>
+        </nav>
+    </header>
+    @RenderBody()
+    <div class="container">
+        <main role="main" class="pb-3">
+
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - MainProject1 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
+
+---------------------------------->_ADMIN.CSHTML
+
+
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccesser;
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MainProject1 Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="background-color:#b1f8e0">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MainProject1</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                        <li>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Registration">AddEmployee</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="ManagerDe">Requests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="AllEmployee">Employees</a>
+                        </li>
+                        <li>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">AllData</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="LogOut">LogOut</a>
+                        </li>
+                    </ul>
+                    <h1 style="right:10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Role")</h1>
+                    <h3 style="right: 10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Name1")</h3>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    @RenderBody()
+
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - MainProject1 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
+---------------------------------->_ACCOUNTENT.CSHTML
+
+
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccesser;
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MainProject1 Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MainProject1</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="ACCTC" asp-action="Index">AllData</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="ACCTC" asp-action="LogOut">LogOut</a>
+                        </li>
+                    </ul>
+
+                    <h1 style="right:10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Role")</h1>
+                    <h3 style="right: 10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Name1")</h3>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    @RenderBody()
+
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - MainProject1 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
+
+---------------------------------->_MANAGERLAYOUT.CSHTML
+
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccesser;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MainProject1</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="background-color: #b1f8e0">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MainProject1</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Manager" asp-action="EmployeeDet">Requests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Claims">Claims</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Status">Status</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Manager" asp-action="LogOut">LogOut</a>
+                        </li>
+                    </ul>
+                    <h1 style="right:10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Role")</h1>
+                    <h3 style="right: 10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Name1")</h3>
+                </div>
+            </div>
+        </nav>
+    </header>
+    @RenderBody()
+
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - MainProject1 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
+---------------------------------->_EMPLOYEE.CSHTML
+
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccesser;
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MainProject1 Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="background-color: #b9fade">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MainProject1</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Status">Status</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Claims">Claims</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="LogOut">LogOut</a>
+                        </li>
+                    </ul>
+                    <h1 style="right:10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Role")</h1>
+                    <h3 style="right: 10px;"> @HttpContextAccesser.HttpContext.Session.GetString("Name1")</h3>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    @RenderBody()
+
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - MainProject1 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
+---------------------------------->_VALIDATIONSCRIPT.CSHTML
+
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+---------------------------------->_ERROR.CSHTML
+
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<h1 class="text-danger">Error.</h1>
+<h2 class="text-danger">An error occurred while processing your request.</h2>
+
+@if (Model.ShowRequestId)
+{
+    <p>
+        <strong>Request ID:</strong> <code>@Model.RequestId</code>
+    </p>
+}
+
+<h3>Development Mode</h3>
+<p>
+    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
+</p>
+<p>
+    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
+    It can result in displaying sensitive information from exceptions to end users.
+    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
+    and restarting the app.
+</p>
+
+===========================================================================_VIEWSTART.CSHTML
+
+
+---------------------------------->_VIEWSTART.CSHTML
+
+
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccesser;
+
+
+@{
+    @if (@HttpContextAccesser.HttpContext.Session.GetString("Role") == "Manager")
+    {
+        Layout = "_ManagerLayout";
+    } 
+    else if (@HttpContextAccesser.HttpContext.Session.GetString("Role") == "Admin")
+    {
+        Layout = "_Admin";
+    } 
+    else if(@HttpContextAccesser.HttpContext.Session.GetString("Role") == "Accountent")
+    {
+        Layout = "_Accountent";
+    } 
+    else if(@HttpContextAccesser.HttpContext.Session.GetString("Role") == "Employee")
+    {
+        Layout = "_Employee";
+    }
+    else
+    {
+        Layout = "_Layout";
+    }
+
+}
+
+====================================================================PROGRAM.CS
+
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            CreateHostBuilder(args).Build().Run();
+        }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
+    }
+}
+
+
+
+====================================================================STARTUP.CS
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MainProject1
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; set; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddControllersWithViews();
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie
+              (m=>m.LoginPath = new Microsoft.AspNetCore.Http.PathString("/Home/Login"));
+
+
+            //step 3 service add
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSession();
+        }
+      
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+            }
+            app.UseStaticFiles();
+
+            app.UseRouting();
+            // Install session
+            //step 2 use session
+            app.UseSession();
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Login}/{id?}");
+            });
+        }
+    }
+}
+
+==================================================================================================
+
+
