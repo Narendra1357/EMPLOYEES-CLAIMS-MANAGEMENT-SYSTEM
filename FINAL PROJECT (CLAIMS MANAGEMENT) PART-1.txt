@@ -1,0 +1,829 @@
+
+
+-------------------------------------------------------------------
+====================== PROJECT API ================================
+-------------------------------------------------------------------
+
+------------->USE API (MVC FRAMEWORK )
+
+
+----------------->FIRST OF ALL
+
+INSTALL REQUIRED PACKAGES
+
+------------------------->CONTROLLER
+
+using MAINProjectAPI.Database;
+using MAINProjectAPI.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+namespace MAINProjectAPI.Controllers
+{
+    public class MainController : ApiController
+    {
+
+        KPNssIncDBEntities dbcon = new KPNssIncDBEntities();
+
+
+        [HttpGet]
+        [Route("Api/GetAllData")]
+        public List<GetAllData_Result> GetAllData()
+        {
+
+            var res = dbcon.GetAllData().ToList();
+            return res;
+
+        }
+
+        [HttpGet]
+        [Route("Api/GetStatus")]
+        public GetStatus_Result GetStatus(int Empid,string Role,string Name)
+        {
+
+            var res = dbcon.GetStatus(Empid,Role, Name).FirstOrDefault();
+            if (res == null)
+            {
+                return null;
+            }
+            else
+            {
+                return res;
+            }
+
+        }
+        [HttpGet]
+        [Route("Api/GetAllEmployee")]
+        public List<AllEmployees_Result> GetAllEmployee()
+        {
+
+            var res = dbcon.AllEmployees().ToList();
+            return res;
+
+        }
+
+        [HttpGet]
+        [Route("Api/GetDataWithRole")]
+        public List<GetDataWRole_Result> GetDataWithRole(string Role)
+        {
+
+            var res = dbcon.GetDataWRole(Role).ToList();
+            return res;
+
+        }
+        [HttpPost]
+        [Route("Api/MngApproved")]
+        public HttpResponseMessage MApproved(int Id)
+        {
+            dbcon.MApproved(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+        [HttpPost]
+        [Route("Api/MngReject")]
+        public HttpResponseMessage MgReject(int Id)
+        {
+            dbcon.MReject(Id);
+            dbcon.SaveChanges(); 
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res; 
+        }
+   
+        [HttpPost]
+        [Route("Api/MngSandBack")]
+        public HttpResponseMessage MgSandBack(int Id)
+        {
+            dbcon.MgSandBack(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+        [HttpPost]
+        [Route("Api/AdmApproved")]
+        public HttpResponseMessage AdApproved(int Id)
+        {
+            dbcon.AdApproved(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+        [HttpPost]
+        [Route("Api/AdmReject")]
+        public HttpResponseMessage AdReject(int Id)
+        {
+            dbcon.AdReject(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+       
+        [HttpPost]
+        [Route("Api/AdmSandBack")]
+        public HttpResponseMessage AdSandBack(int Id)
+        {
+            dbcon.AdSandBack(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+        [HttpPost]
+        [Route("Api/AccSApproved")]
+        public HttpResponseMessage ASApproved(int Id)
+        {
+            dbcon.ASApproved(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+        [HttpPost]
+        [Route("Api/AccSReject")]
+        public HttpResponseMessage ASReject(int Id)
+        {
+            dbcon.ASReject(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+
+        [HttpPost]
+        [Route("Api/AccSSandBack")]
+        public HttpResponseMessage AcSandBack(int Id)
+        {
+            dbcon.AcSandBack(Id);
+            dbcon.SaveChanges();
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+        }
+
+        [HttpPost]
+        [Route("Api/InsertData")]
+        public HttpResponseMessage InsertData(InsertModel obj)
+        {
+            if (obj.Role =="Employee")
+            {
+                dbcon.InsertEmployees(obj.Name,obj.Email,obj.Password,obj.DOB,obj.MobileNo,obj.DateofJoining,obj.Salary,obj.State,obj.District,obj.PinCode);
+                dbcon.SaveChanges();
+            }
+            else if(obj.Role == "Manager")
+            {
+                dbcon.InsertManager(obj.Name, obj.Email, obj.Password, obj.DOB, obj.MobileNo, obj.DateofJoining, obj.Salary, obj.State,obj.City, obj.District, obj.PinCode);
+                dbcon.SaveChanges();
+            }
+            else if (obj.Role == "Admin")
+            {
+                dbcon.InsertAdmin(obj.Name, obj.Email, obj.Password, obj.DOB, obj.MobileNo,obj.State, obj.City, obj.District, obj.PinCode);
+                dbcon.SaveChanges();
+            }
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+
+        }
+        [HttpPost]
+        [Route("Api/InsertClaim")]
+        public HttpResponseMessage InsertClaim(ClaimsModel obj)
+        {
+
+            dbcon.InsertClaims(obj.Empid, obj.Role, obj.Name, obj.Destination, obj.DateofApply, obj.Days, obj.Reason, obj.Transport, obj.CostSpend, obj.Dateofdone, obj.MStatus, obj.feedback, obj.AcSStatus, obj.paymentStatus);
+            dbcon.SaveChanges();
+            
+            HttpResponseMessage res = new HttpResponseMessage(HttpStatusCode.OK);
+            return res;
+
+            }
+
+        [HttpGet]
+        [Route("api/UserLogin")]
+        public LogIn UserLogin(string Email,string Password)
+        {
+            var res = dbcon.LogIns.Where(a => a.Email.ToLower() == Email.ToLower()).FirstOrDefault();
+            if (res == null)
+            {
+                return null;
+            }
+            else
+            {
+                if (res.Email.ToLower() == Email.ToLower() && res.Password == Password)
+                {
+                    return res;
+                }
+                else
+                { 
+                    return res;
+                }
+            }
+
+        } 
+    }
+        
+ }
+
+
+===============================================================
+
+
+------------------------------>DB-CONNECTION
+
+//------------------------------------------------------------------------------
+// <auto-generated>
+//    This code was generated from a template.
+//
+//    Manual changes to this file may cause unexpected behavior in your application.
+//    Manual changes to this file will be overwritten if the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+namespace MAINProjectAPI.Database
+{
+    using System;
+    using System.Data.Entity;
+    using System.Data.Entity.Infrastructure;
+    using System.Data.Objects;
+    using System.Data.Objects.DataClasses;
+    using System.Linq;
+    
+    public partial class KPNssIncDBEntities : DbContext
+    {
+        public KPNssIncDBEntities()
+            : base("name=KPNssIncDBEntities")
+        {
+        }
+    
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            throw new UnintentionalCodeFirstException();
+        }
+    
+        public DbSet<AccountMng> AccountMngs { get; set; }
+        public DbSet<Address> Addresses { get; set; }
+        public DbSet<Admin> Admins { get; set; }
+        public DbSet<EmpClaimsTable> EmpClaimsTables { get; set; }
+        public DbSet<Employee> Employees { get; set; }
+        public DbSet<LogIn> LogIns { get; set; }
+        public DbSet<MAddress> MAddresses { get; set; }
+        public DbSet<Manager> Managers { get; set; }
+        public DbSet<MgAddress> MgAddresses { get; set; }
+        public DbSet<MRole> MRoles { get; set; }
+    
+        public virtual int AApproved(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("AApproved", idParameter);
+        }
+    
+        public virtual int AcSandBack(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("AcSandBack", idParameter);
+        }
+    
+        public virtual int AdApproved(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("AdApproved", idParameter);
+        }
+    
+        public virtual int AdReject(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("AdReject", idParameter);
+        }
+    
+        public virtual int AdSandBack(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("AdSandBack", idParameter);
+        }
+    
+        public virtual int Approved(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("Approved", idParameter);
+        }
+    
+        public virtual int ASApproved(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("ASApproved", idParameter);
+        }
+    
+        public virtual int ASReject(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("ASReject", idParameter);
+        }
+    
+        public virtual ObjectResult<GetAllData_Result> GetAllData()
+        {
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<GetAllData_Result>("GetAllData");
+        }
+    
+        public virtual ObjectResult<GetDataWRole_Result> GetDataWRole(string role)
+        {
+            var roleParameter = role != null ?
+                new ObjectParameter("Role", role) :
+                new ObjectParameter("Role", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<GetDataWRole_Result>("GetDataWRole", roleParameter);
+        }
+    
+        public virtual int InsertAdmin(string name, string email, string password, string dob, string mobileNo, string state, string city, string dist, string zipCode)
+        {
+            var nameParameter = name != null ?
+                new ObjectParameter("Name", name) :
+                new ObjectParameter("Name", typeof(string));
+    
+            var emailParameter = email != null ?
+                new ObjectParameter("Email", email) :
+                new ObjectParameter("Email", typeof(string));
+    
+            var passwordParameter = password != null ?
+                new ObjectParameter("Password", password) :
+                new ObjectParameter("Password", typeof(string));
+    
+            var dobParameter = dob != null ?
+                new ObjectParameter("Dob", dob) :
+                new ObjectParameter("Dob", typeof(string));
+    
+            var mobileNoParameter = mobileNo != null ?
+                new ObjectParameter("MobileNo", mobileNo) :
+                new ObjectParameter("MobileNo", typeof(string));
+    
+            var stateParameter = state != null ?
+                new ObjectParameter("State", state) :
+                new ObjectParameter("State", typeof(string));
+    
+            var cityParameter = city != null ?
+                new ObjectParameter("City", city) :
+                new ObjectParameter("City", typeof(string));
+    
+            var distParameter = dist != null ?
+                new ObjectParameter("Dist", dist) :
+                new ObjectParameter("Dist", typeof(string));
+    
+            var zipCodeParameter = zipCode != null ?
+                new ObjectParameter("ZipCode", zipCode) :
+                new ObjectParameter("ZipCode", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("InsertAdmin", nameParameter, emailParameter, passwordParameter, dobParameter, mobileNoParameter, stateParameter, cityParameter, distParameter, zipCodeParameter);
+        }
+    
+        public virtual int InsertClaims(Nullable<int> id, string role, string name, string destination, Nullable<System.DateTime> dateofApply, string days, string reason, string transport, Nullable<decimal> costSpend, Nullable<System.DateTime> dateofdone, string mStatus, string feedback, string acSStatus, string paymentStatus)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            var roleParameter = role != null ?
+                new ObjectParameter("Role", role) :
+                new ObjectParameter("Role", typeof(string));
+    
+            var nameParameter = name != null ?
+                new ObjectParameter("Name", name) :
+                new ObjectParameter("Name", typeof(string));
+    
+            var destinationParameter = destination != null ?
+                new ObjectParameter("Destination", destination) :
+                new ObjectParameter("Destination", typeof(string));
+    
+            var dateofApplyParameter = dateofApply.HasValue ?
+                new ObjectParameter("DateofApply", dateofApply) :
+                new ObjectParameter("DateofApply", typeof(System.DateTime));
+    
+            var daysParameter = days != null ?
+                new ObjectParameter("Days", days) :
+                new ObjectParameter("Days", typeof(string));
+    
+            var reasonParameter = reason != null ?
+                new ObjectParameter("Reason", reason) :
+                new ObjectParameter("Reason", typeof(string));
+    
+            var transportParameter = transport != null ?
+                new ObjectParameter("Transport", transport) :
+                new ObjectParameter("Transport", typeof(string));
+    
+            var costSpendParameter = costSpend.HasValue ?
+                new ObjectParameter("CostSpend", costSpend) :
+                new ObjectParameter("CostSpend", typeof(decimal));
+    
+            var dateofdoneParameter = dateofdone.HasValue ?
+                new ObjectParameter("Dateofdone", dateofdone) :
+                new ObjectParameter("Dateofdone", typeof(System.DateTime));
+    
+            var mStatusParameter = mStatus != null ?
+                new ObjectParameter("MStatus", mStatus) :
+                new ObjectParameter("MStatus", typeof(string));
+    
+            var feedbackParameter = feedback != null ?
+                new ObjectParameter("feedback", feedback) :
+                new ObjectParameter("feedback", typeof(string));
+    
+            var acSStatusParameter = acSStatus != null ?
+                new ObjectParameter("AcSStatus", acSStatus) :
+                new ObjectParameter("AcSStatus", typeof(string));
+    
+            var paymentStatusParameter = paymentStatus != null ?
+                new ObjectParameter("paymentStatus", paymentStatus) :
+                new ObjectParameter("paymentStatus", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("InsertClaims", idParameter, roleParameter, nameParameter, destinationParameter, dateofApplyParameter, daysParameter, reasonParameter, transportParameter, costSpendParameter, dateofdoneParameter, mStatusParameter, feedbackParameter, acSStatusParameter, paymentStatusParameter);
+        }
+    
+        public virtual int InsertEmployees(string name, string email, string password, string dob, string mobileNo, string dateofJoin, Nullable<int> salary, string state, string dist, string zipCode)
+        {
+            var nameParameter = name != null ?
+                new ObjectParameter("Name", name) :
+                new ObjectParameter("Name", typeof(string));
+    
+            var emailParameter = email != null ?
+                new ObjectParameter("Email", email) :
+                new ObjectParameter("Email", typeof(string));
+    
+            var passwordParameter = password != null ?
+                new ObjectParameter("Password", password) :
+                new ObjectParameter("Password", typeof(string));
+    
+            var dobParameter = dob != null ?
+                new ObjectParameter("Dob", dob) :
+                new ObjectParameter("Dob", typeof(string));
+    
+            var mobileNoParameter = mobileNo != null ?
+                new ObjectParameter("MobileNo", mobileNo) :
+                new ObjectParameter("MobileNo", typeof(string));
+    
+            var dateofJoinParameter = dateofJoin != null ?
+                new ObjectParameter("DateofJoin", dateofJoin) :
+                new ObjectParameter("DateofJoin", typeof(string));
+    
+            var salaryParameter = salary.HasValue ?
+                new ObjectParameter("Salary", salary) :
+                new ObjectParameter("Salary", typeof(int));
+    
+            var stateParameter = state != null ?
+                new ObjectParameter("State", state) :
+                new ObjectParameter("State", typeof(string));
+    
+            var distParameter = dist != null ?
+                new ObjectParameter("Dist", dist) :
+                new ObjectParameter("Dist", typeof(string));
+    
+            var zipCodeParameter = zipCode != null ?
+                new ObjectParameter("ZipCode", zipCode) :
+                new ObjectParameter("ZipCode", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("InsertEmployees", nameParameter, emailParameter, passwordParameter, dobParameter, mobileNoParameter, dateofJoinParameter, salaryParameter, stateParameter, distParameter, zipCodeParameter);
+        }
+    
+        public virtual int InsertManager(string name, string email, string password, string dob, string mobileNo, string dateofJoin, Nullable<int> salary, string state, string city, string dist, string zipCode)
+        {
+            var nameParameter = name != null ?
+                new ObjectParameter("Name", name) :
+                new ObjectParameter("Name", typeof(string));
+    
+            var emailParameter = email != null ?
+                new ObjectParameter("Email", email) :
+                new ObjectParameter("Email", typeof(string));
+    
+            var passwordParameter = password != null ?
+                new ObjectParameter("Password", password) :
+                new ObjectParameter("Password", typeof(string));
+    
+            var dobParameter = dob != null ?
+                new ObjectParameter("Dob", dob) :
+                new ObjectParameter("Dob", typeof(string));
+    
+            var mobileNoParameter = mobileNo != null ?
+                new ObjectParameter("MobileNo", mobileNo) :
+                new ObjectParameter("MobileNo", typeof(string));
+    
+            var dateofJoinParameter = dateofJoin != null ?
+                new ObjectParameter("DateofJoin", dateofJoin) :
+                new ObjectParameter("DateofJoin", typeof(string));
+    
+            var salaryParameter = salary.HasValue ?
+                new ObjectParameter("Salary", salary) :
+                new ObjectParameter("Salary", typeof(int));
+    
+            var stateParameter = state != null ?
+                new ObjectParameter("State", state) :
+                new ObjectParameter("State", typeof(string));
+    
+            var cityParameter = city != null ?
+                new ObjectParameter("City", city) :
+                new ObjectParameter("City", typeof(string));
+    
+            var distParameter = dist != null ?
+                new ObjectParameter("Dist", dist) :
+                new ObjectParameter("Dist", typeof(string));
+    
+            var zipCodeParameter = zipCode != null ?
+                new ObjectParameter("ZipCode", zipCode) :
+                new ObjectParameter("ZipCode", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("InsertManager", nameParameter, emailParameter, passwordParameter, dobParameter, mobileNoParameter, dateofJoinParameter, salaryParameter, stateParameter, cityParameter, distParameter, zipCodeParameter);
+        }
+    
+        public virtual int MApproved(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("MApproved", idParameter);
+        }
+    
+        public virtual int MgSandBack(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("MgSandBack", idParameter);
+        }
+    
+        public virtual int MReject(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("MReject", idParameter);
+        }
+    
+        public virtual int Reject(Nullable<int> id)
+        {
+            var idParameter = id.HasValue ?
+                new ObjectParameter("Id", id) :
+                new ObjectParameter("Id", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction("Reject", idParameter);
+        }
+    
+        public virtual ObjectResult<GetDatawithID_Result> GetDatawithID(Nullable<int> empid)
+        {
+            var empidParameter = empid.HasValue ?
+                new ObjectParameter("Empid", empid) :
+                new ObjectParameter("Empid", typeof(int));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<GetDatawithID_Result>("GetDatawithID", empidParameter);
+        }
+    
+        public virtual ObjectResult<GetLogData_Result> GetLogData(string email, string password, string role)
+        {
+            var emailParameter = email != null ?
+                new ObjectParameter("Email", email) :
+                new ObjectParameter("Email", typeof(string));
+    
+            var passwordParameter = password != null ?
+                new ObjectParameter("Password", password) :
+                new ObjectParameter("Password", typeof(string));
+    
+            var roleParameter = role != null ?
+                new ObjectParameter("Role", role) :
+                new ObjectParameter("Role", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<GetLogData_Result>("GetLogData", emailParameter, passwordParameter, roleParameter);
+        }
+    
+        public virtual ObjectResult<GetAllEmployee_Result> GetAllEmployee()
+        {
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<GetAllEmployee_Result>("GetAllEmployee");
+        }
+    
+        public virtual ObjectResult<AllEmployees_Result> AllEmployees()
+        {
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<AllEmployees_Result>("AllEmployees");
+        }
+    
+        public virtual ObjectResult<GetStatus_Result> GetStatus(Nullable<int> empid, string role, string name)
+        {
+            var empidParameter = empid.HasValue ?
+                new ObjectParameter("Empid", empid) :
+                new ObjectParameter("Empid", typeof(int));
+    
+            var roleParameter = role != null ?
+                new ObjectParameter("Role", role) :
+                new ObjectParameter("Role", typeof(string));
+    
+            var nameParameter = name != null ?
+                new ObjectParameter("Name", name) :
+                new ObjectParameter("Name", typeof(string));
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<GetStatus_Result>("GetStatus", empidParameter, roleParameter, nameParameter);
+        }
+    }
+}
+
+====================================================================
+
+-------------------------->MODELS
+
+----------->CLAIMS MODEL
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace MAINProjectAPI.Models
+{
+    public class ClaimsModel
+    {
+
+        
+        public Nullable<int> Empid { get; set; }
+        public string Role { get; set; }
+        public string Name { get; set; }
+        public string Destination { get; set; }
+        public Nullable<System.DateTime> DateofApply { get; set; }
+        public string Days { get; set; }
+        public string Reason { get; set; }
+        public string Transport { get; set; }
+        public Nullable<decimal> CostSpend { get; set; }
+        public Nullable<System.DateTime> Dateofdone { get; set; }
+        public string MStatus { get; set; }
+        public string feedback { get; set; }
+        public string AcSStatus { get; set; }
+        public string paymentStatus { get; set; }
+    }
+}
+
+
+------------------------>INSERT MODEL
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace MAINProjectAPI.Models
+{
+    public class InsertModel
+    {
+        public int id { get; set; }
+       
+        public string Name { get; set; }
+       
+        public string Role { get; set; }
+      
+        public string MobileNo { get; set; }
+       
+        public string DOB { get; set; }
+       
+        public string Email { get; set; }
+         
+        public string Password { get; set; }
+
+        public string DateofJoining { get; set; }
+
+        public int Salary { get; set; }
+      
+        public string State { get; set; }
+
+        public string City { get; set; }
+        
+        public string District { get; set; }
+
+        public string PinCode { get; set; }
+
+
+    }
+}
+---------------------------------->LOGIN MODEL
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace MAINProjectAPI.Models
+{
+    public class LoginModel
+    {
+        public int Id { get; set; }
+        public int? RegID { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string Role { get; set; }
+    }
+}
+
+
+===========================================================================
+------------------------------>WEBCONFIG
+
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  For more information on how to configure your ASP.NET application, please visit
+  https://go.microsoft.com/fwlink/?LinkId=301879
+  -->
+<configuration>
+  <configSections>
+    <!-- For more information on Entity Framework configuration, visit http://go.microsoft.com/fwlink/?LinkID=237468 -->
+    <section name="entityFramework" type="System.Data.Entity.Internal.ConfigFile.EntityFrameworkSection, EntityFramework, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false" />
+  </configSections>
+  <appSettings>
+    <add key="webpages:Version" value="3.0.0.0" />
+    <add key="webpages:Enabled" value="false" />
+    <add key="ClientValidationEnabled" value="true" />
+    <add key="UnobtrusiveJavaScriptEnabled" value="true" />
+  </appSettings>
+  <system.web>
+    <compilation debug="true" targetFramework="4.7.2" />
+    <httpRuntime targetFramework="4.7.2" />
+  </system.web>
+  <system.webServer>
+    <handlers>
+      <remove name="ExtensionlessUrlHandler-Integrated-4.0" />
+      <remove name="OPTIONSVerbHandler" />
+      <remove name="TRACEVerbHandler" />
+      <add name="ExtensionlessUrlHandler-Integrated-4.0" path="*." verb="*" type="System.Web.Handlers.TransferRequestHandler" preCondition="integratedMode,runtimeVersionv4.0" />
+    </handlers>
+  </system.webServer>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="Antlr3.Runtime" publicKeyToken="eb42632606e9261f" />
+        <bindingRedirect oldVersion="0.0.0.0-3.5.0.2" newVersion="3.5.0.2" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="Newtonsoft.Json" culture="neutral" publicKeyToken="30ad4fe6b2a6aeed" />
+        <bindingRedirect oldVersion="0.0.0.0-12.0.0.0" newVersion="12.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Web.Optimization" publicKeyToken="31bf3856ad364e35" />
+        <bindingRedirect oldVersion="1.0.0.0-1.1.0.0" newVersion="1.1.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="WebGrease" publicKeyToken="31bf3856ad364e35" />
+        <bindingRedirect oldVersion="0.0.0.0-1.6.5135.21930" newVersion="1.6.5135.21930" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Web.Helpers" publicKeyToken="31bf3856ad364e35" />
+        <bindingRedirect oldVersion="1.0.0.0-3.0.0.0" newVersion="3.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Web.WebPages" publicKeyToken="31bf3856ad364e35" />
+        <bindingRedirect oldVersion="1.0.0.0-3.0.0.0" newVersion="3.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Web.Mvc" publicKeyToken="31bf3856ad364e35" />
+        <bindingRedirect oldVersion="1.0.0.0-5.2.7.0" newVersion="5.2.7.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Net.Http.Formatting" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-5.2.7.0" newVersion="5.2.7.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Web.Http" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-5.2.7.0" newVersion="5.2.7.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+  <system.codedom>
+    <compilers>
+      <compiler language="c#;cs;csharp" extension=".cs" type="Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider, Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" warningLevel="4" compilerOptions="/langversion:default /nowarn:1659;1699;1701" />
+      <compiler language="vb;vbs;visualbasic;vbscript" extension=".vb" type="Microsoft.CodeDom.Providers.DotNetCompilerPlatform.VBCodeProvider, Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" warningLevel="4" compilerOptions="/langversion:default /nowarn:41008 /define:_MYTYPE=\&quot;Web\&quot; /optionInfer+" />
+    </compilers>
+  </system.codedom>
+  <entityFramework>
+    <defaultConnectionFactory type="System.Data.Entity.Infrastructure.LocalDbConnectionFactory, EntityFramework">
+      <parameters>
+        <parameter value="v15.0" />
+      </parameters>
+    </defaultConnectionFactory>
+  </entityFramework>
+  <connectionStrings>
+    <add name="KPNssIncDBEntities" connectionString="metadata=res://*/Database.Model1.csdl|res://*/Database.Model1.ssdl|res://*/Database.Model1.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source=CHETUIWK639\SQLSERVER2019;initial catalog=KPNssIncDB;integrated security=True;MultipleActiveResultSets=True;App=EntityFramework&quot;" providerName="System.Data.EntityClient" />
+  </connectionStrings>
+</configuration>
