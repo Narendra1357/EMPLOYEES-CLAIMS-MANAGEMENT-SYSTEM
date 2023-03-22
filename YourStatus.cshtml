@@ -1,0 +1,92 @@
+﻿@model MainProject1.Models.DataModel
+@{
+    ViewData["Title"] = "YourStatus";
+}
+
+<h1>YourStatus</h1>
+ 
+<style>
+    .z {
+        color: red;
+    }
+    label{
+        position:center;
+        padding:20px;
+        margin:10px;
+    }
+</style>
+<h1>Details</h1>
+
+<style>
+    body {
+        background:url('@Url.Content("~/css/kajal.jpg")');
+        background-size:1500px,10px
+   }
+</style>
+
+<form asp-action="Details" asp-controller="Employee">
+
+    <div class="form-group">
+        <label class="z">Employee Id</label>
+        <span class="bg-light text-center" style="border:double">@Model.Empid</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Employee role</label>
+        <span class="bg-light text-center" style="border:double">@Model.Role</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Employee Name</label>
+        <span class="bg-light text-center" style="border:double">@Model.Name</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Destination</label>
+        <span class="bg-light text-center" style="border:double">@Model.Destination</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Date of Apply</label>
+        <span class="bg-light text-center" style="border:double">@Model.DateofApply</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Days</label>
+        <span class="bg-light text-center" style="border:double">@Model.Days</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Reason</label>
+        <span class="bg-light text-center" style="border:double">@Model.Reason</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Transport</label>
+        <span class="bg-light text-center" style="border:double">@Model.Transport</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Cost Spend</label>
+        <span class="bg-light text-center" style="border:double">@Model.CostSpend</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Date of Last Activity</label>
+        <span class="bg-light text-center" style="border:double">@Model.Dateofdone</span>
+    </div>
+    <div class="form-group">
+        <label class="z">First Step Verification</label>
+        <span class="bg-light text-center" style="border:double">@Model.MStatus</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Account Section Verification</label>
+        <span class="bg-light text-center" style="border:double">@Model.AcSStatus</span>
+    </div>
+    <div class="form-group">
+        <label class="z">Last Feedback</label>
+        <span class="bg-light text-center" style="border:double">@Model.feedback</span>
+    </div>
+
+    <div class="form-group">
+        <label class="z">Payment Status</label>
+        <span class="bg-light text-center" style="border:double">@Model.paymentStatus</span>
+    </div>
+</form>

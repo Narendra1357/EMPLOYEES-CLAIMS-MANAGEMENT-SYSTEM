@@ -1,0 +1,100 @@
+﻿@model MainProject1.Models.DataModel
+@{
+    ViewData["Title"] = "Claims";
+}
+<p class="text-danger">@TempData["Message"]</p>
+<h1>Claims</h1>
+<style>
+    .a {
+        color: #ff0000
+    }
+
+    body {
+        background-color: #00ffff
+    }
+
+    .b {
+        padding: 80px,100px;
+        margin: 20px,20px,20px,20px;
+        border: 3px solid #ffffff;
+    }
+
+    input[type=text], input[type=email], input[type=number], input[type=text], input[type=number], input[type=number], input[type=date] {
+        width: 50%;
+        padding: 5px 5px 5px 5px;
+        margin: 5px 0;
+        display: inline-block;
+        border: 3px solid groove;
+    }
+</style>
+
+
+<h2>AddEmp</h2>
+ 
+<div class="container">
+    <form asp-action="Claims" asp-controller="Home" method="post">
+        <div class="card b">
+            @*<input asp-for="Id" type="hidden" />*@
+            <div class="form-group">
+                <label>Id<label class="a">*</label></label><br />
+                <input asp-for="Empid" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Empid"></span>
+                
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select asp-for="Role" class=" form-control" data-val="true">
+                    <option>Manager</option>
+                    <option>Employee</option>
+                </select>
+                <span class="text-danger" asp-validation-for="Role"></span>
+            </div>
+            <div class="form-group">
+                <label>Name<label class="a">*</label></label><br />
+                <input asp-for="Name" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Name"></span>
+            </div>
+            <div class="form-group">
+                <label>Destination<label class="a">*</label></label><br />
+                <input asp-for="Destination" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Destination"></span>
+            </div>
+            <div class="form-group">
+                <label>Date of Apply<label class="a">*</label></label><br />
+                <input asp-for="DateofApply" class="form-control" data-val="true" city" type="date" />
+                <span class="text-danger" asp-validation-for="DateofApply"></span>
+            </div>
+            <div class="form-group">
+                <label>Number of Days stayed<label class="a">*</label></label><br />
+                <input asp-for="Days" class="form-control" data-val="true" type="number" />
+                <span class="text-danger" asp-validation-for="Days"></span>
+            </div>
+            <div class="form-group">
+                <label>Reason for Journey<label class="a">*</label></label><br />
+                <input asp-for="Reason" class="form-control" data-val="true" type="text" />
+                <span class="text-danger" asp-validation-for="Reason"></span>
+            </div>
+            <div class="form-group">
+                <label>Use Transport <label class="a">*</label></label><br />
+                <input asp-for="Transport" class="form-control" data-val="true" type="text" />
+                @*<input asp-for="Transport" type="radio" value="@item.Empid" /> <label>Public</label>
+                    <input asp-for="Transport" type="radio" value="@item.Empid" /> <label></label>
+                    <input asp-for="Transport" type="radio" value="@item.Empid" /> <label>Public</label>
+                    <input asp-for="Transport" type="radio" value="@item.Empid" /> <label>Public</label>*@
+                <span class="text-danger" asp-validation-for="Transport"></span>
+            </div>
+            <div class="form-group">
+                <label>Amount Spend<label class="a">*</label></label><br />
+                <input asp-for="CostSpend" class="form-control" data-val="true"  type="text" />
+                <span class="text-danger" asp-validation-for="CostSpend"></span>
+            </div>
+
+            <div>
+                <button type="submit">Claim</button>
+                @*<input class="btn btn-primary" type="submit" /><br />*@
+            </div>
+        </div>
+    </form>
+</div>
+
+

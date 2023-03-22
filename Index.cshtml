@@ -1,71 +1,8 @@
-﻿@model List<MainProject1.Models.DataModel>
-@{
-    ViewData["Title"] = "Index";
+﻿@{
+    ViewData["Title"] = "Home Page";
 }
 
-<h1>Index</h1>
-
-<style>
-    .head {
-        background-color: #5e66fb;
-    }
-</style>
-<body>
-    
-        @*<h5 style="color:#080ba8" class="text-sm-center temp">@TempData["Message"]</h5>*@
-
-        <h5>Your All data </h5>
-        <table class="table table-bordered table-hover">
-            <tr class="head">
-                <th>Empid</th>
-                <th>Role</th>
-                <th>Name</th>
-                <th>Destination</th>
-                <th>Date of Apply</th>
-                <th>Days</th>
-                <th>Reason</th>
-                <th>Transport</th>
-                <th>CostSpend</th>
-                <th>Date of Last Action</th>
-                <th>Manager Status</th>
-                <th>Account Stauts</th>
-                <th>Payment Stauts</th>
-                <th>Feedback</th>
-
-            </tr>
-            @foreach (var item in Model)
-            {
-        <tr class="trr">
-            <td>@item.Empid</td>
-            <td>@item.Role</td>
-            <td>@item.Name</td> 
-            <td>@item.Destination</td>
-            <td>@item.DateofApply.Date.ToShortDateString()</td>
-            <td>@item.Days</td>
-            <td>@item.Reason</td>
-            <td>@item.Transport</td>
-            <td>@item.CostSpend</td>
-            <td>@item.Dateofdone</td>
-            <td>@item.MStatus</td>
-            <td>@item.AcSStatus</td>
-            <td>@item.paymentStatus</td>
-            <td>@item.feedback</td>
-          
-            @*<td><a class="btn btn-primary" asp-controller="Admin" asp-action="Approv" asp-route-id="@item.Empid">Approv</a></td>
-            <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Sendback" asp-route-id="@item.Empid">Sendback</a></td>
-            <td><a class="btn btn-primary" asp-controller="Admin" asp-action="Reject" asp-route-id="@item.Empid">Reject</a></td>*@
-             
-        </tr>
-            }
-        </table>
-</body>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
-
-</script>
-<script>
-        $(document).ready(function () {
-            //alert("Login Successesfully..You are eligible...");
-            $(".temp").fadeOut(3000);
-            });
-
-</script>
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>

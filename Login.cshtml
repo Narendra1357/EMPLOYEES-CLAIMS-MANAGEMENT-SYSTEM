@@ -1,0 +1,80 @@
+﻿@model MainProject1.Models.UserLogin
+@{
+    ViewData["Title"] = "Login";
+}
+
+@*<script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        $(function () {
+     $("button").click(function () {
+                alert("login SuccessFully!!");
+            });
+        });
+    </script>*@
+
+
+<style>
+    .box {
+    background-color:aliceblue;
+        width: 500px;
+        border-radius: 4px;
+        margin: 0 auto 0 auto;
+        padding: 5px 15px 80px 15px;
+    }
+
+    .login-page {
+        margin-top: 90px;
+    }
+    body
+    {
+        background: url('@Url.Content("~/css/images/kanha.jpg")');
+        background-size:3000px,40px
+    }
+</style>
+
+
+@*<div class="login-page">*@
+<div class="box">
+
+    <center>
+        <h1 style="font-family:'Global Serif'">LOGIN</h1>
+    </center>
+    <br />
+    @*<h1>UserLogin</h1>*@
+
+    <form asp-action="Login" asp-controller="Home" method="post">
+        <div class="form-group">
+            <label>Role</label>
+            <select asp-for="Role" class=" form-control">
+                <option>Admin</option>
+                <option>Manager</option>
+                <option>Accountent</option>
+                <option>Employee</option>
+            </select>
+            <p class="text-danger">@TempData["Role"]</p>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input asp-for="Email" class="form-control" type="text" placeholder="email" />
+            <span class="text-danger" asp-validation-for="Email"></span>
+            <p class="text-danger">@TempData["InvalidEmail"]</p>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input asp-for="Password" class="form-control" type="password" placeholder="password" />
+            <span class="text-danger" asp-validation-for="Password"></span>
+            <p class="text-danger">@TempData["InvalidPass"]</p>
+        </div>
+        <div class="checkbox">
+            <label>
+                <input name="remember" type="checkbox" value="Remember Me">Remember Me
+            </label>
+        </div>
+        <button class="btn btn-lg btn-success btn-block" type="submit">Login</button>
+
+    </form>
+</div>
+
+
+
+
